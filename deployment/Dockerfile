@@ -9,17 +9,19 @@ ENV NODE_ENV=production \
 
 WORKDIR /usr/src/app/
 
-# Copy the NodeBB source from the proper version
-COPY nodebb_proper/ /usr/src/app/
-
-# Install required packages
+# Install required packages and download NodeBB
 RUN apk add --no-cache \
     tini \
     bash \
     python3 \
     make \
     g++ \
+    git \
     && corepack enable
+
+# Download NodeBB directly from GitHub
+RUN git clone -b v3.12.7 https://github.com/NodeBB/NodeBB.git . \
+    && rm -rf .git
 
 # Create non-root user
 RUN addgroup -g ${GID} -S ${USER} \
