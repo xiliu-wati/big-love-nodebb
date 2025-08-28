@@ -169,7 +169,7 @@ fi
 # Setup NodeBB if first time
 if [[ ! -f "/opt/config/.setup_complete" ]]; then
     echo "🔧 Setting up NodeBB for the first time..."
-    ./nodebb setup --skip
+    ./nodebb setup --skip-build
     echo "setup_complete" > "/opt/config/.setup_complete"
     echo "✅ NodeBB setup complete!"
 fi
