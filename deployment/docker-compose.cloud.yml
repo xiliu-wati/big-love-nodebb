@@ -1,0 +1,62 @@
+# Generic Docker Compose for cloud deployment
+version: '3.8'
+
+services:
+  nodebb:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile
+    restart: unless-stopped
+    ports:
+      - '${PORT:-4567}:4567'
+    environment:
+      NODE_ENV: production
+      PORT: ${PORT:-4567}
+      URL: ${URL:-http://localhost:4567}
+      NODEBB_SECRET: ${NODEBB_SECRET:-big-love-secret-key-production-2024}
+      DATABASE_URL: ${DATABASE_URL}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      - postgres
+    volumes:
+      - nodebb-uploads:/usr/src/app/public/uploads
+      - nodebb-build:/usr/src/app/build
+      - nodebb-config:/opt/config
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4567/api"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-nodebb}
+      POSTGRES_USER: ${POSTGRES_USER:-nodebb}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nodebb}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-nodebb}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Optional Redis for session storage (uncomment if needed)
+  # redis:
+  #   image: redis:7-alpine
+  #   restart: unless-stopped
+  #   command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:-redis123}"]
+  #   volumes:
+  #     - redis-data:/data
+
+volumes:
+  postgres-data:
+  nodebb-uploads:
+  nodebb-build:
+  nodebb-config:
+  # redis-data:
+
+
