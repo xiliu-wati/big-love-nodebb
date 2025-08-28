@@ -127,17 +127,13 @@ if [[ "$DATABASE_TYPE" == "postgres" ]]; then
         if node -e "
             const { Client } = require('pg');
             const connectionString = '${DB_CONNECTION_STRING:-}';
-            const client = new Client(connectionString ? connectionString : {
-                host: '${DB_HOST}',
-                port: ${DB_PORT},
-                user: '${DB_USER}',
-                password: '${DB_PASS}',
-                database: '${DB_NAME}',
+            const client = new Client({
+                connectionString: connectionString,
                 ssl: { rejectUnauthorized: false }
             });
             client.connect()
                 .then(() => { console.log('PostgreSQL is ready!'); client.end(); process.exit(0); })
-                .catch(() => { process.exit(1); });
+                .catch((err) => { console.log('Connection failed:', err.code); process.exit(1); });
         " 2>/dev/null; then
             DB_READY=true
             break
