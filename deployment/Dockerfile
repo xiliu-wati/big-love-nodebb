@@ -51,6 +51,7 @@ RUN apk add --no-cache \
     tini \
     bash \
     wget \
+    postgresql-client \
     && corepack enable \
     && addgroup -g ${GID} -S ${USER} \
     && adduser -u ${UID} -S ${USER} -G ${USER} -h /usr/src/app -s /bin/bash \
