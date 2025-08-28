@@ -85,19 +85,36 @@ cat /opt/config/config.json
 # Wait for database to be ready
 echo "⏳ Waiting for database to be ready..."
 if [[ "$DATABASE_TYPE" == "postgres" ]]; then
-    until pg_isready -h "${DB_HOST}" -p "${DB_PORT}" -U "${DB_USER}"; do
+    # Use Node.js to check PostgreSQL connection instead of pg_isready
+    until node -e "
+        const { Client } = require('pg');
+        const client = new Client({
+            host: '${DB_HOST}',
+            port: ${DB_PORT},
+            user: '${DB_USER}',
+            password: '${DB_PASS}',
+            database: '${DB_NAME}',
+            ssl: { rejectUnauthorized: false }
+        });
+        client.connect()
+            .then(() => { console.log('PostgreSQL is ready!'); client.end(); process.exit(0); })
+            .catch(() => { console.log('PostgreSQL not ready, retrying...'); process.exit(1); });
+    " 2>/dev/null; do
         echo "Waiting for PostgreSQL to be ready..."
-        sleep 2
+        sleep 5
     done
 else
     # For Redis, try to connect using Node.js since redis-cli isn't available
-    node -e "
+    until node -e "
         const redis = require('ioredis');
         const client = new redis(process.env.REDIS_URL);
         client.ping()
           .then(() => { console.log('Redis is ready!'); process.exit(0); })
           .catch(() => { console.log('Redis not ready, retrying...'); process.exit(1); });
-    " || sleep 5
+    " 2>/dev/null; do
+        echo "Waiting for Redis to be ready..."
+        sleep 5
+    done
 fi
 
 echo "🗄️ Database is ready!"
