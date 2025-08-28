@@ -18,9 +18,12 @@ if [[ "${DATABASE_URL:-}" != "" ]]; then
     DATABASE_TYPE="postgres"
     DB_CONNECTION_STRING="${DATABASE_URL}"
     
-    # Extract individual components for connection testing (more robust parsing)
-    DB_HOST=$(echo $DATABASE_URL | sed -n 's|.*@\([^:]*\):.*|\1|p')
-    DB_PORT=$(echo $DATABASE_URL | sed -n 's|.*:\([0-9]*\)/.*|\1|p')
+    # Extract individual components for connection testing (handle URLs with/without port)
+    DB_HOST=$(echo $DATABASE_URL | sed -n 's|.*@\([^:/]*\)[:/].*|\1|p')
+    DB_PORT=$(echo $DATABASE_URL | sed -n 's|.*@[^:]*:\([0-9]*\)/.*|\1|p')
+    if [[ -z "$DB_PORT" ]]; then
+        DB_PORT="5432"  # Default PostgreSQL port when not specified
+    fi
     DB_USER=$(echo $DATABASE_URL | sed -n 's|.*://\([^:]*\):.*|\1|p')
     DB_PASS=$(echo $DATABASE_URL | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
     DB_NAME=$(echo $DATABASE_URL | sed -n 's|.*/\([^?]*\).*|\1|p')
