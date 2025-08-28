@@ -11,15 +11,21 @@ SECRET_VAL="${NODEBB_SECRET:-$(openssl rand -hex 32)}"
 
 # Database configuration - supports both PostgreSQL and Redis
 if [[ "${DATABASE_URL:-}" != "" ]]; then
-    echo "📊 Configuring PostgreSQL database..."
-    # Extract database info from DATABASE_URL if provided
-    DB_HOST="${PGHOST:-$(echo $DATABASE_URL | sed 's|.*@\([^:]*\):.*|\1|')}"
-    DB_PORT="${PGPORT:-$(echo $DATABASE_URL | sed 's|.*:\([0-9]*\)/.*|\1|')}"
-    DB_USER="${PGUSER:-$(echo $DATABASE_URL | sed 's|.*://\([^:]*\):.*|\1|')}"
-    DB_PASS="${PGPASSWORD:-$(echo $DATABASE_URL | sed 's|.*://[^:]*:\([^@]*\)@.*|\1|')}"
-    DB_NAME="${PGDATABASE:-$(echo $DATABASE_URL | sed 's|.*/\([^?]*\).*|\1|')}"
+    echo "📊 Configuring PostgreSQL database with DATABASE_URL..."
+    echo "DATABASE_URL: ${DATABASE_URL}"
     
+    # Use DATABASE_URL directly for NodeBB configuration
     DATABASE_TYPE="postgres"
+    DB_CONNECTION_STRING="${DATABASE_URL}"
+    
+    # Extract individual components for connection testing (more robust parsing)
+    DB_HOST=$(echo $DATABASE_URL | sed -n 's|.*@\([^:]*\):.*|\1|p')
+    DB_PORT=$(echo $DATABASE_URL | sed -n 's|.*:\([0-9]*\)/.*|\1|p')
+    DB_USER=$(echo $DATABASE_URL | sed -n 's|.*://\([^:]*\):.*|\1|p')
+    DB_PASS=$(echo $DATABASE_URL | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
+    DB_NAME=$(echo $DATABASE_URL | sed -n 's|.*/\([^?]*\).*|\1|p')
+    
+    echo "Parsed - Host: $DB_HOST, Port: $DB_PORT, User: $DB_USER, DB: $DB_NAME"
 elif [[ "${REDIS_URL:-}" != "" ]]; then
     echo "📊 Configuring Redis database..."
     DATABASE_TYPE="redis"
@@ -38,7 +44,31 @@ mkdir -p /opt/config
 
 # Generate configuration file
 if [[ "$DATABASE_TYPE" == "postgres" ]]; then
-    cat > /opt/config/config.json <<JSON
+    if [[ "${DB_CONNECTION_STRING:-}" != "" ]]; then
+        # Use DATABASE_URL directly
+        cat > /opt/config/config.json <<JSON
+{
+  "url": "${URL_VAL}",
+  "secret": "${SECRET_VAL}",
+  "database": "postgres",
+  "postgres": {
+    "connectionString": "${DB_CONNECTION_STRING}",
+    "ssl": {
+      "rejectUnauthorized": false
+    }
+  },
+  "port": ${PORT_VAL},
+  "bind_address": "0.0.0.0",
+  "logLevel": "${LOG_LEVEL:-info}",
+  "daemon": false,
+  "session_store": {
+    "name": "connect-pg-simple"
+  }
+}
+JSON
+    else
+        # Use individual connection parameters
+        cat > /opt/config/config.json <<JSON
 {
   "url": "${URL_VAL}",
   "secret": "${SECRET_VAL}",
@@ -62,6 +92,7 @@ if [[ "$DATABASE_TYPE" == "postgres" ]]; then
   }
 }
 JSON
+    fi
 else
     cat > /opt/config/config.json <<JSON
 {
@@ -82,42 +113,59 @@ fi
 echo "✅ Generated configuration:"
 cat /opt/config/config.json
 
-# Wait for database to be ready
+# Wait for database to be ready (with timeout)
 echo "⏳ Waiting for database to be ready..."
+DB_READY=false
+TIMEOUT=60  # 60 seconds timeout
+
 if [[ "$DATABASE_TYPE" == "postgres" ]]; then
-    # Use Node.js to check PostgreSQL connection instead of pg_isready
-    until node -e "
-        const { Client } = require('pg');
-        const client = new Client({
-            host: '${DB_HOST}',
-            port: ${DB_PORT},
-            user: '${DB_USER}',
-            password: '${DB_PASS}',
-            database: '${DB_NAME}',
-            ssl: { rejectUnauthorized: false }
-        });
-        client.connect()
-            .then(() => { console.log('PostgreSQL is ready!'); client.end(); process.exit(0); })
-            .catch(() => { console.log('PostgreSQL not ready, retrying...'); process.exit(1); });
-    " 2>/dev/null; do
-        echo "Waiting for PostgreSQL to be ready..."
+    echo "Testing PostgreSQL connection..."
+    for i in $(seq 1 12); do  # 12 attempts, 5 seconds each = 60 seconds max
+        if node -e "
+            const { Client } = require('pg');
+            const connectionString = '${DB_CONNECTION_STRING:-}';
+            const client = new Client(connectionString ? connectionString : {
+                host: '${DB_HOST}',
+                port: ${DB_PORT},
+                user: '${DB_USER}',
+                password: '${DB_PASS}',
+                database: '${DB_NAME}',
+                ssl: { rejectUnauthorized: false }
+            });
+            client.connect()
+                .then(() => { console.log('PostgreSQL is ready!'); client.end(); process.exit(0); })
+                .catch(() => { process.exit(1); });
+        " 2>/dev/null; then
+            DB_READY=true
+            break
+        fi
+        echo "Waiting for PostgreSQL to be ready... (attempt $i/12)"
         sleep 5
     done
 else
-    # For Redis, try to connect using Node.js since redis-cli isn't available
-    until node -e "
-        const redis = require('ioredis');
-        const client = new redis(process.env.REDIS_URL);
-        client.ping()
-          .then(() => { console.log('Redis is ready!'); process.exit(0); })
-          .catch(() => { console.log('Redis not ready, retrying...'); process.exit(1); });
-    " 2>/dev/null; do
-        echo "Waiting for Redis to be ready..."
+    echo "Testing Redis connection..."
+    for i in $(seq 1 12); do  # 12 attempts, 5 seconds each = 60 seconds max
+        if node -e "
+            const redis = require('ioredis');
+            const client = new redis(process.env.REDIS_URL);
+            client.ping()
+              .then(() => { console.log('Redis is ready!'); process.exit(0); })
+              .catch(() => { process.exit(1); });
+        " 2>/dev/null; then
+            DB_READY=true
+            break
+        fi
+        echo "Waiting for Redis to be ready... (attempt $i/12)"
         sleep 5
     done
 fi
 
-echo "🗄️ Database is ready!"
+if [[ "$DB_READY" == "true" ]]; then
+    echo "🗄️ Database is ready!"
+else
+    echo "⚠️  Database connection timeout after ${TIMEOUT}s - continuing anyway..."
+    echo "🚀 NodeBB will attempt to connect when it starts"
+fi
 
 # Setup NodeBB if first time
 if [[ ! -f "/opt/config/.setup_complete" ]]; then
