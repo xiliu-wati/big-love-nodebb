@@ -19,7 +19,7 @@ RUN apk add --no-cache \
     git \
     && corepack enable
 
-# Download NodeBB directly from GitHub
+# Download NodeBB directly from GitHub - Cache bust v2024-08-28
 RUN git clone -b v3.12.7 https://github.com/NodeBB/NodeBB.git . \
     && rm -rf .git
 
