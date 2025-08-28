@@ -6,7 +6,7 @@ services:
     dockerfilePath: ./deployment/Dockerfile
     dockerContext: .
     region: oregon  # Change to singapore for closer to Hong Kong
-    plan: starter  # $7/month
+    plan: free  # Free web service
     buildCommand: echo "Building NodeBB with Docker"
     startCommand: ""  # Uses Dockerfile ENTRYPOINT
     healthCheckPath: /api
@@ -34,6 +34,6 @@ databases:
   - name: big-love-postgres
     databaseName: nodebb
     user: nodebb
-    plan: basic-1gb  # $7/month - New flexible plan format
+    plan: free  # Free PostgreSQL plan
 
 
