@@ -1,90 +1,218 @@
-class User {
+import 'package:equatable/equatable.dart';
+import 'package:json_annotation/json_annotation.dart';
+
+part 'user.g.dart';
+
+enum UserRole {
+  @JsonValue('user')
+  user,
+  @JsonValue('moderator')
+  moderator,
+  @JsonValue('admin')
+  admin,
+  @JsonValue('owner')
+  owner
+}
+
+enum UserStatus {
+  @JsonValue('online')
+  online,
+  @JsonValue('away')
+  away,
+  @JsonValue('busy')
+  busy,
+  @JsonValue('offline')
+  offline
+}
+
+@JsonSerializable()
+class UserPreferences extends Equatable {
+  final bool darkMode;
+  final String language;
+  final bool emailNotifications;
+  final bool pushNotifications;
+  final bool soundEnabled;
+  final String timezone;
+
+  const UserPreferences({
+    this.darkMode = false,
+    this.language = 'en',
+    this.emailNotifications = true,
+    this.pushNotifications = true,
+    this.soundEnabled = true,
+    this.timezone = 'UTC',
+  });
+
+  factory UserPreferences.fromJson(Map<String, dynamic> json) => _$UserPreferencesFromJson(json);
+  Map<String, dynamic> toJson() => _$UserPreferencesToJson(this);
+
+  @override
+  List<Object?> get props => [
+    darkMode, language, emailNotifications, pushNotifications, soundEnabled, timezone
+  ];
+}
+
+@JsonSerializable()
+class UserStats extends Equatable {
+  final int totalPosts;
+  final int totalReactions;
+  final int forumsJoined;
+  final int reputation;
+  final DateTime? lastActive;
+
+  const UserStats({
+    this.totalPosts = 0,
+    this.totalReactions = 0,
+    this.forumsJoined = 0,
+    this.reputation = 0,
+    this.lastActive,
+  });
+
+  factory UserStats.fromJson(Map<String, dynamic> json) => _$UserStatsFromJson(json);
+  Map<String, dynamic> toJson() => _$UserStatsToJson(this);
+
+  @override
+  List<Object?> get props => [totalPosts, totalReactions, forumsJoined, reputation, lastActive];
+}
+
+@JsonSerializable()
+class User extends Equatable {
   final int id;
   final String username;
   final String email;
-  final String? fullname;
-  final String? picture;
-  final String? aboutme;
-  final String role;
+  final String? displayName;
+  final String? bio;
+  final String? avatarUrl;
+  final String? bannerUrl;
+  final UserRole role;
+  final UserStatus status;
   final DateTime joinedAt;
-  final DateTime? lastOnline;
+  final DateTime? lastSeen;
+  final UserPreferences preferences;
+  final UserStats stats;
+  final bool isVip;
 
-  User({
+  const User({
     required this.id,
     required this.username,
     required this.email,
-    this.fullname,
-    this.picture,
-    this.aboutme,
-    required this.role,
+    this.displayName,
+    this.bio,
+    this.avatarUrl,
+    this.bannerUrl,
+    this.role = UserRole.user,
+    this.status = UserStatus.offline,
     required this.joinedAt,
-    this.lastOnline,
+    this.lastSeen,
+    required this.preferences,
+    required this.stats,
+    this.isVip = false,
   });
 
-  factory User.fromJson(Map<String, dynamic> json) {
-    return User(
-      id: json['id'] ?? 0,
-      username: json['username'] ?? '',
-      email: json['email'] ?? '',
-      fullname: json['fullname'],
-      picture: json['picture'],
-      aboutme: json['aboutme'],
-      role: json['role'] ?? 'user',
-      joinedAt: json['joinedAt'] != null 
-        ? DateTime.parse(json['joinedAt'])
-        : DateTime.now(),
-      lastOnline: json['lastOnline'] != null 
-        ? DateTime.parse(json['lastOnline'])
-        : null,
-    );
+  factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
+  Map<String, dynamic> toJson() => _$UserToJson(this);
+
+  // Helper getters
+  String get name => displayName ?? username;
+  
+  bool get isOnline => status == UserStatus.online;
+  
+  bool get canModerate => role.index >= UserRole.moderator.index;
+  
+  bool get canAdmin => role.index >= UserRole.admin.index;
+  
+  String get roleDisplayName {
+    if (isVip && role == UserRole.user) return 'VIP';
+    return role.name.toUpperCase();
   }
 
-  bool get isAdmin => role == 'admin';
-  bool get isModerator => role == 'moderator';
-  bool get isMvpUser => role == 'mvp';
-  bool get isSpecialUser => role == 'special';
-  bool get isRegularUser => role == 'user';
-
-  String get displayName => fullname?.isNotEmpty == true ? fullname! : username;
-
-  String get avatarUrl {
-    if (picture?.isNotEmpty == true) {
-      if (picture!.startsWith('http')) {
-        return picture!;
-      } else {
-        return 'https://kind-vibrancy-production.up.railway.app$picture';
-      }
+  String get roleBadgeEmoji {
+    if (isVip && role == UserRole.user) return '👑';
+    switch (role) {
+      case UserRole.user:
+        return '👤';
+      case UserRole.moderator:
+        return '🛡️';
+      case UserRole.admin:
+        return '⚡';
+      case UserRole.owner:
+        return '👑';
     }
-    return 'https://ui-avatars.com/api/?name=${username[0].toUpperCase()}&background=6B46C1&color=fff&size=150';
   }
 
-  // Compatibility properties for profile screen
-  int get postcount => 0; // Mock data for now
-  int get reputation => 0; // Mock data for now
-  DateTime get joindate => joinedAt; // Use joinedAt as joindate
-  List<String> get groups => []; // Empty groups for now
+  String get statusText {
+    switch (status) {
+      case UserStatus.online:
+        return 'Online';
+      case UserStatus.away:
+        return 'Away';
+      case UserStatus.busy:
+        return 'Busy';
+      case UserStatus.offline:
+        return lastSeen != null ? 'Last seen ${_formatLastSeen()}' : 'Offline';
+    }
+  }
+
+  String get reputationDisplay {
+    if (stats.reputation >= 1000) {
+      return '${(stats.reputation / 1000).toStringAsFixed(1)}k';
+    }
+    return stats.reputation.toString();
+  }
+
+  // Legacy compatibility properties
+  String? get picture => avatarUrl;
+  String get avatarUrl_legacy => avatarUrl ?? '';
+
+  String _formatLastSeen() {
+    if (lastSeen == null) return 'Unknown';
+    final now = DateTime.now();
+    final difference = now.difference(lastSeen!);
+    
+    if (difference.inMinutes < 1) return 'just now';
+    if (difference.inMinutes < 60) return '${difference.inMinutes}m ago';
+    if (difference.inHours < 24) return '${difference.inHours}h ago';
+    if (difference.inDays < 7) return '${difference.inDays}d ago';
+    return 'on ${lastSeen!.day}/${lastSeen!.month}';
+  }
 
   User copyWith({
     int? id,
     String? username,
     String? email,
-    String? fullname,
-    String? picture,
-    String? aboutme,
-    String? role,
+    String? displayName,
+    String? bio,
+    String? avatarUrl,
+    String? bannerUrl,
+    UserRole? role,
+    UserStatus? status,
     DateTime? joinedAt,
-    DateTime? lastOnline,
+    DateTime? lastSeen,
+    UserPreferences? preferences,
+    UserStats? stats,
+    bool? isVip,
   }) {
     return User(
       id: id ?? this.id,
       username: username ?? this.username,
       email: email ?? this.email,
-      fullname: fullname ?? this.fullname,
-      picture: picture ?? this.picture,
-      aboutme: aboutme ?? this.aboutme,
+      displayName: displayName ?? this.displayName,
+      bio: bio ?? this.bio,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      bannerUrl: bannerUrl ?? this.bannerUrl,
       role: role ?? this.role,
+      status: status ?? this.status,
       joinedAt: joinedAt ?? this.joinedAt,
-      lastOnline: lastOnline ?? this.lastOnline,
+      lastSeen: lastSeen ?? this.lastSeen,
+      preferences: preferences ?? this.preferences,
+      stats: stats ?? this.stats,
+      isVip: isVip ?? this.isVip,
     );
   }
+
+  @override
+  List<Object?> get props => [
+    id, username, email, displayName, bio, avatarUrl, bannerUrl,
+    role, status, joinedAt, lastSeen, preferences, stats, isVip,
+  ];
 }

@@ -22,6 +22,9 @@ class ChineseStrings {
   static const String settings = '设置';
   static const String search = '搜索';
   static const String notifications = '通知';
+  static const String statistics = '统计信息';
+  static const String help = '帮助';
+  static const String logout = '退出登录';
   
   // 帖子相关
   static const String newPost = '新帖子';

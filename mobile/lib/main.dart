@@ -1,63 +1,44 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import 'providers/auth_provider.dart';
-import 'providers/post_provider.dart';
-import 'screens/auth/login_screen.dart';
-import 'screens/auth/register_screen.dart';
-import 'screens/home/home_screen.dart';
-import 'screens/home/categories_screen.dart';
-import 'screens/post/create_post_screen.dart';
-import 'screens/profile/profile_screen.dart';
-import 'utils/theme.dart';
+import 'core/theme/app_theme.dart';
+import 'core/localization/chinese_strings.dart';
+import 'presentation/shell/app_shell.dart';
+import 'presentation/screens/auth/login_screen.dart';
+import 'presentation/screens/auth/register_screen.dart';
+import 'presentation/screens/home/forum_home_screen.dart';
+import 'presentation/screens/profile/profile_screen.dart';
+import 'presentation/screens/post/post_thread_screen.dart';
 
 void main() {
-  runApp(const BigLoveApp());
+  runApp(
+    const ProviderScope(
+      child: BigLoveApp(),
+    ),
+  );
 }
 
-class BigLoveApp extends StatelessWidget {
+class BigLoveApp extends ConsumerWidget {
   const BigLoveApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => PostProvider()),
-      ],
-      child: Consumer<AuthProvider>(
-        builder: (context, authProvider, _) {
-          return MaterialApp.router(
-            title: 'Big Love Community',
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
-            themeMode: ThemeMode.system,
-            routerConfig: _createRouter(authProvider),
-            debugShowCheckedModeBanner: false,
-          );
-        },
-      ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    return MaterialApp.router(
+      title: ChineseStrings.appFullName,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system,
+      routerConfig: _createRouter(),
+      debugShowCheckedModeBanner: false,
     );
   }
 
-  GoRouter _createRouter(AuthProvider authProvider) {
+  GoRouter _createRouter() {
     return GoRouter(
-      initialLocation: authProvider.isAuthenticated ? '/home' : '/login',
-      redirect: (context, state) {
-        final isAuthenticated = authProvider.isAuthenticated;
-        final isAuthRoute = state.uri.path.startsWith('/login') || 
-                           state.uri.path.startsWith('/register');
-        
-        if (!isAuthenticated && !isAuthRoute) {
-          return '/login';
-        }
-        if (isAuthenticated && isAuthRoute) {
-          return '/home';
-        }
-        return null;
-      },
+      initialLocation: '/forums',
       routes: [
+        // Authentication Routes
         GoRoute(
           path: '/login',
           builder: (context, state) => const LoginScreen(),
@@ -66,23 +47,88 @@ class BigLoveApp extends StatelessWidget {
           path: '/register',
           builder: (context, state) => const RegisterScreen(),
         ),
-        GoRoute(
-          path: '/home',
-          builder: (context, state) => const HomeScreen(),
-        ),
-        GoRoute(
-          path: '/create-post',
-          builder: (context, state) => const CreatePostScreen(),
-        ),
-        GoRoute(
-          path: '/profile',
-          builder: (context, state) => const ProfileScreen(),
-        ),
-        GoRoute(
-          path: '/categories',
-          builder: (context, state) => const CategoriesScreen(),
+        
+        // Main Shell Route
+        ShellRoute(
+          builder: (context, state, child) => AppShell(child: child),
+          routes: [
+            // Forums Home
+            GoRoute(
+              path: '/forums',
+              builder: (context, state) => const ForumHomeScreen(),
+            ),
+            
+            // User Profile
+            GoRoute(
+              path: '/profile',
+              builder: (context, state) => const ProfileScreen(),
+            ),
+            
+            // Forum-specific routes (for future implementation)
+            GoRoute(
+              path: '/forum/:forumId',
+              builder: (context, state) {
+                final forumId = state.pathParameters['forumId']!;
+                return ForumDetailScreen(forumId: int.parse(forumId));
+              },
+            ),
+            
+            // Post-specific routes
+            GoRoute(
+              path: '/forum/:forumId/post/:postId',
+              builder: (context, state) {
+                final forumId = state.pathParameters['forumId']!;
+                final postId = state.pathParameters['postId']!;
+                return PostThreadScreen(
+                  forumId: int.parse(forumId),
+                  postId: int.parse(postId),
+                );
+              },
+            ),
+          ],
         ),
       ],
+      
+      // Error handling
+      errorBuilder: (context, state) => Scaffold(
+        appBar: AppBar(title: const Text('Error')),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error, size: 64, color: Colors.red),
+              const SizedBox(height: 16),
+              Text('Page not found: ${state.uri}'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => context.go('/forums'),
+                child: const Text('Go to Forums'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Placeholder screens for future implementation
+class ForumDetailScreen extends StatelessWidget {
+  final int forumId;
+  
+  const ForumDetailScreen({super.key, required this.forumId});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Text('Forum Detail Screen'),
+          Text('Forum ID: $forumId'),
+          const Text('(Coming in Phase 2)'),
+        ],
+      ),
     );
   }
 }

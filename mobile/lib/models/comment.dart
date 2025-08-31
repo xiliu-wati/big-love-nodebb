@@ -1,80 +1,112 @@
-class Comment {
-  final int id;
-  final int postId;
-  final String content;
-  final String author;
-  final DateTime createdAt;
-  final int likes;
-  final bool isLiked;
+import 'package:equatable/equatable.dart';
+import 'package:json_annotation/json_annotation.dart';
+import 'user.dart';
+import 'reaction.dart';
 
-  Comment({
+part 'comment.g.dart';
+
+@JsonSerializable()
+class Comment extends Equatable {
+  final int id;
+  final String content;
+  final User author;
+  final int postId;
+  final DateTime createdAt;
+  final DateTime? updatedAt;
+  final bool isEdited;
+  final int upvotes;
+  final int downvotes;
+  final List<Comment> replies;
+  final Comment? parentComment;
+  final int? replyToCommentId;
+  final Map<String, List<Reaction>> reactions;
+
+  const Comment({
     required this.id,
-    required this.postId,
     required this.content,
     required this.author,
+    required this.postId,
     required this.createdAt,
-    required this.likes,
-    this.isLiked = false,
+    this.updatedAt,
+    this.isEdited = false,
+    this.upvotes = 0,
+    this.downvotes = 0,
+    this.replies = const [],
+    this.parentComment,
+    this.replyToCommentId,
+    this.reactions = const {},
   });
 
-  factory Comment.fromJson(Map<String, dynamic> json) {
-    return Comment(
-      id: json['id'] ?? 0,
-      postId: json['postId'] ?? 0,
-      content: json['content'] ?? '',
-      author: json['author'] ?? 'Unknown',
-      createdAt: json['createdAt'] != null 
-        ? DateTime.parse(json['createdAt'])
-        : DateTime.now(),
-      likes: json['likes'] ?? 0,
-      isLiked: json['isLiked'] ?? false,
-    );
-  }
+  factory Comment.fromJson(Map<String, dynamic> json) => _$CommentFromJson(json);
+  Map<String, dynamic> toJson() => _$CommentToJson(this);
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'postId': postId,
-      'content': content,
-      'author': author,
-      'createdAt': createdAt.toIso8601String(),
-      'likes': likes,
-      'isLiked': isLiked,
-    };
-  }
+  // Helper getters
+  String get timeAgo => _formatRelativeTime(createdAt);
+  
+  int get netVotes => upvotes - downvotes;
+  
+  bool get hasReplies => replies.isNotEmpty;
+  
+  bool get isReply => parentComment != null || replyToCommentId != null;
+  
+  int get totalReactions => reactions.values.fold(0, (sum, list) => sum + list.length);
 
-  String get timeAgo {
-    final now = DateTime.now();
-    final difference = now.difference(createdAt);
-
-    if (difference.inDays > 0) {
-      return '${difference.inDays}d ago';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours}h ago';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes}m ago';
-    } else {
-      return 'Just now';
+  // Get user's reaction to this comment
+  String? getUserReaction(int userId) {
+    for (final entry in reactions.entries) {
+      if (entry.value.any((reaction) => reaction.user.id == userId)) {
+        return entry.key;
+      }
     }
+    return null;
+  }
+
+  static String _formatRelativeTime(DateTime time) {
+    final now = DateTime.now();
+    final difference = now.difference(time);
+    
+    if (difference.inMinutes < 1) return 'Just now';
+    if (difference.inMinutes < 60) return '${difference.inMinutes}m ago';
+    if (difference.inHours < 24) return '${difference.inHours}h ago';
+    if (difference.inDays < 7) return '${difference.inDays}d ago';
+    return '${difference.inDays ~/ 7}w ago';
   }
 
   Comment copyWith({
     int? id,
-    int? postId,
     String? content,
-    String? author,
+    User? author,
+    int? postId,
     DateTime? createdAt,
-    int? likes,
-    bool? isLiked,
+    DateTime? updatedAt,
+    bool? isEdited,
+    int? upvotes,
+    int? downvotes,
+    List<Comment>? replies,
+    Comment? parentComment,
+    int? replyToCommentId,
+    Map<String, List<Reaction>>? reactions,
   }) {
     return Comment(
       id: id ?? this.id,
-      postId: postId ?? this.postId,
       content: content ?? this.content,
       author: author ?? this.author,
+      postId: postId ?? this.postId,
       createdAt: createdAt ?? this.createdAt,
-      likes: likes ?? this.likes,
-      isLiked: isLiked ?? this.isLiked,
+      updatedAt: updatedAt ?? this.updatedAt,
+      isEdited: isEdited ?? this.isEdited,
+      upvotes: upvotes ?? this.upvotes,
+      downvotes: downvotes ?? this.downvotes,
+      replies: replies ?? this.replies,
+      parentComment: parentComment ?? this.parentComment,
+      replyToCommentId: replyToCommentId ?? this.replyToCommentId,
+      reactions: reactions ?? this.reactions,
     );
   }
+
+  @override
+  List<Object?> get props => [
+    id, content, author, postId, createdAt, updatedAt, isEdited,
+    upvotes, downvotes, replies, parentComment, replyToCommentId, reactions,
+  ];
 }

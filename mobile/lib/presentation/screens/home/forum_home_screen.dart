@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/localization/chinese_strings.dart';
 
 class ForumHomeScreen extends ConsumerWidget {
   const ForumHomeScreen({super.key});
@@ -100,21 +101,21 @@ class WelcomeView extends StatelessWidget {
             context,
             icon: Icons.forum,
             value: '4',
-            label: 'Forums',
+            label: ChineseStrings.forums,
           ),
           _buildStatDivider(context),
           _buildStatItem(
             context,
             icon: Icons.people,
             value: '1.8K',
-            label: 'Members',
+            label: ChineseStrings.members,
           ),
           _buildStatDivider(context),
           _buildStatItem(
             context,
             icon: Icons.message,
             value: '26.8K',
-            label: 'Posts',
+            label: ChineseStrings.posts,
           ),
         ],
       ),
@@ -172,8 +173,8 @@ class WelcomeView extends StatelessWidget {
         _buildActionButton(
           context,
           icon: Icons.explore,
-          label: 'Browse Forums',
-          description: 'Explore all available forums',
+          label: '浏览论坛',
+          description: '探索所有可用论坛',
           onPressed: () {
             // TODO: Focus on forum sidebar or show all forums
           },
@@ -181,8 +182,8 @@ class WelcomeView extends StatelessWidget {
         _buildActionButton(
           context,
           icon: Icons.person,
-          label: 'My Profile',
-          description: 'View and edit your profile',
+          label: '我的资料',
+          description: '查看和编辑个人资料',
           onPressed: () {
             // TODO: Navigate to profile
           },
@@ -190,8 +191,8 @@ class WelcomeView extends StatelessWidget {
         _buildActionButton(
           context,
           icon: Icons.help_outline,
-          label: 'Get Help',
-          description: 'Learn how to use the forums',
+          label: '获取帮助',
+          description: '学习如何使用论坛',
           onPressed: () {
             // TODO: Show help or tutorial
           },
