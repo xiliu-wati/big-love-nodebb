@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/localization/chinese_strings.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../models/forum.dart';
@@ -38,12 +39,12 @@ class ForumListSection extends ConsumerWidget {
                 Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
                 const SizedBox(height: 8),
                 Text(
-                  'Failed to load forums',
+                  '加载论坛失败',
                   style: AppTextStyles.bodyMedium.copyWith(color: theme.colorScheme.error),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Tap to retry',
+                  '点击重试',
                   style: AppTextStyles.bodySmall.copyWith(color: theme.colorScheme.onSurface.withValues(alpha: 0.6)),
                 ),
               ],
@@ -72,7 +73,7 @@ class ForumListSection extends ConsumerWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Forums',
+                  ChineseStrings.forums,
                   style: AppTextStyles.labelLarge.copyWith(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
                     fontWeight: FontWeight.w600,
@@ -145,14 +146,14 @@ class ForumListSection extends ConsumerWidget {
                     children: [
                       const SizedBox(height: 2),
                       Text(
-                        '${forum.memberCount} members • ${forum.onlineCount} online',
+                        '${forum.memberCount} 成员 • ${forum.onlineCount} 在线',
                         style: AppTextStyles.bodySmall.copyWith(
                           color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'Active ${_formatLastActivity(forum.lastActivity)}',
+                        '最后活跃 ${_formatLastActivity(forum.lastActivity)}',
                         style: AppTextStyles.bodySmall.copyWith(
                           color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                         ),
@@ -217,13 +218,13 @@ class ForumListSection extends ConsumerWidget {
     final difference = now.difference(lastActivity);
 
     if (difference.inMinutes < 1) {
-      return 'just now';
+      return '刚刚';
     } else if (difference.inMinutes < 60) {
-      return '${difference.inMinutes}m ago';
+      return '${difference.inMinutes}分钟前';
     } else if (difference.inHours < 24) {
-      return '${difference.inHours}h ago';
+      return '${difference.inHours}小时前';
     } else {
-      return '${difference.inDays}d ago';
+      return '${difference.inDays}天前';
     }
   }
 }

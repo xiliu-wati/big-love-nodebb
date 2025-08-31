@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/localization/chinese_strings.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../models/user.dart';
@@ -44,7 +45,7 @@ class ProfileSection extends ConsumerWidget {
           const SizedBox(height: AppConstants.spacingS),
           if (!isCompact) ...[
             Text(
-              'Not signed in',
+              '未登录',
               style: AppTextStyles.bodyMedium.copyWith(
                 color: theme.colorScheme.onSurface.withOpacity(0.6),
               ),
@@ -55,7 +56,7 @@ class ProfileSection extends ConsumerWidget {
                 // Navigate to login
                 // TODO: Implement navigation to login screen
               },
-              child: const Text('Sign In'),
+              child: const Text('登录'),
             ),
           ],
         ],
@@ -167,7 +168,7 @@ class ProfileSection extends ConsumerWidget {
               _buildQuickAction(
                 context,
                 Icons.person_outline,
-                'Profile',
+                '个人资料',
                 () {
                   // TODO: Navigate to profile
                 },
@@ -175,7 +176,7 @@ class ProfileSection extends ConsumerWidget {
               _buildQuickAction(
                 context,
                 Icons.settings_outlined,
-                'Settings',
+                '设置',
                 () {
                   // TODO: Navigate to settings
                 },
@@ -183,7 +184,7 @@ class ProfileSection extends ConsumerWidget {
               _buildQuickAction(
                 context,
                 user.preferences.darkMode ? Icons.light_mode : Icons.dark_mode,
-                'Theme',
+                '主题',
                 () {
                   // TODO: Toggle theme
                 },

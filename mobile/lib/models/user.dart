@@ -123,7 +123,16 @@ class User extends Equatable {
   
   String get roleDisplayName {
     if (isVip && role == UserRole.user) return 'VIP';
-    return role.name.toUpperCase();
+    switch (role) {
+      case UserRole.user:
+        return '用户';
+      case UserRole.moderator:
+        return '版主';
+      case UserRole.admin:
+        return '管理员';
+      case UserRole.owner:
+        return '所有者';
+    }
   }
 
   String get roleBadgeEmoji {
@@ -143,13 +152,13 @@ class User extends Equatable {
   String get statusText {
     switch (status) {
       case UserStatus.online:
-        return 'Online';
+        return '在线';
       case UserStatus.away:
-        return 'Away';
+        return '离开';
       case UserStatus.busy:
-        return 'Busy';
+        return '忙碌';
       case UserStatus.offline:
-        return lastSeen != null ? 'Last seen ${_formatLastSeen()}' : 'Offline';
+        return lastSeen != null ? '最后在线 ${_formatLastSeen()}' : '离线';
     }
   }
 
@@ -169,11 +178,11 @@ class User extends Equatable {
     final now = DateTime.now();
     final difference = now.difference(lastSeen!);
     
-    if (difference.inMinutes < 1) return 'just now';
-    if (difference.inMinutes < 60) return '${difference.inMinutes}m ago';
-    if (difference.inHours < 24) return '${difference.inHours}h ago';
-    if (difference.inDays < 7) return '${difference.inDays}d ago';
-    return 'on ${lastSeen!.day}/${lastSeen!.month}';
+    if (difference.inMinutes < 1) return '刚刚';
+    if (difference.inMinutes < 60) return '${difference.inMinutes}分钟前';
+    if (difference.inHours < 24) return '${difference.inHours}小时前';
+    if (difference.inDays < 7) return '${difference.inDays}天前';
+    return '${lastSeen!.month}/${lastSeen!.day}';
   }
 
   User copyWith({
