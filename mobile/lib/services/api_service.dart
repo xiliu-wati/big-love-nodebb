@@ -9,13 +9,13 @@ class ApiService {
   // Base URL - not used, see apiUrl getter below
   static const String baseUrl = 'http://localhost:3000/api';
   
-  // Try multiple endpoints for different environments - PRIORITIZE Android emulator
+  // Try multiple endpoints for different environments - PRIORITIZE LOCAL Chinese backend
   static List<String> get apiUrls {
     return [
-      'https://surprising-exploration-production.up.railway.app/api', // Railway deployment - TRY FIRST
-      'http://10.0.2.2:3000/api',      // For Android emulator (local fallback)
-      'http://localhost:3000/api',     // For iOS simulator and web
-      'http://127.0.0.1:3000/api',     // Alternative localhost
+      'http://10.0.2.2:3000/api',      // For Android emulator (local Chinese backend) - TRY FIRST
+      'http://localhost:3000/api',     // For iOS simulator and web (local Chinese backend)
+      'http://127.0.0.1:3000/api',     // Alternative localhost (local Chinese backend)
+      'https://surprising-exploration-production.up.railway.app/api', // Railway deployment (English fallback)
     ];
   }
 
