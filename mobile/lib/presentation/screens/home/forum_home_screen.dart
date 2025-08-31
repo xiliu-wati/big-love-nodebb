@@ -58,7 +58,7 @@ class WelcomeView extends StatelessWidget {
           
           // Welcome Description
           Text(
-            'Connect with the community, share ideas, and engage in meaningful discussions. Select a forum from the sidebar to get started.',
+            '连接社区，分享想法，参与有意义的讨论。从侧边栏选择一个论坛开始您的大爱之旅。',
             style: AppTextStyles.bodyLarge.copyWith(
               color: theme.colorScheme.onSurface.withOpacity(0.7),
               height: 1.5,
